@@ -1,0 +1,10 @@
+".gitignore" 7L, 44B
+*.log
+*.aux
+*.out
+*.gz
+*.toc
+*.ipynb
+*.fits
+*.csv
+*.txt
