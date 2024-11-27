@@ -1,0 +1,9 @@
+*.log
+*.aux
+*.out
+*.gz
+*.toc
+*.ipynb
+*.fits
+*.csv
+*.txt
