@@ -1,5 +1,6 @@
 import numpy as np
 
+# legacy verson with bool type variable(slower because of casting function is slow)
 def IsingGeneration(m,B,random=False):
     """
     Generate a initial spin lattice for the calculation. m is the size of the system.
@@ -17,19 +18,23 @@ def IsingGeneration(m,B,random=False):
         mat = np.random.uniform(0,1,(m,m))
         S = np.bool_(mat*2//1)
         return S
-    
-def IsingGenerationint(m,B,random=False):
+
+# generating initial spin: we can either align
+def IsingGenerationint(m,B,random=False,align=True):
     """
     Generate a initial spin lattice for the calculation. m is the size of the system.
     Random = false: Generate an initial paramagnets for zero temperature.
     Random = True: Generate an initial random spin lattice for very high temperature.
+    align = True: align the spin with external field(true ground state)
+    align = false: not aligning the spin with external field(possible for metastable state)
     """
     if random == False:
         S = np.ones((m,m),dtype=np.int8)
-        for i in range(m):
-            for j in range(m):          
-                if B[i][j] < 0:
-                    S[i][j] = np.int8(-1)
+        if align == True:
+            for i in range(m):
+                for j in range(m):          
+                    if B[i][j] < 0:
+                        S[i][j] = np.int8(-1)
         return S
     else:
         mat = np.random.uniform(0,2,(m,m))
@@ -37,6 +42,7 @@ def IsingGenerationint(m,B,random=False):
         return np.int8(S)
 
 
+# legacy verson with bool type variable(slower because of casting function is slow)
 def CalculateEnergy(S,B):
     """
     Calculate the energy of the system with ising interaction and external field
@@ -50,6 +56,8 @@ def CalculateEnergy(S,B):
     E2 = (S != Sleft).sum() *2 + (S != Sright).sum() *2 + (S != Sup).sum() *2 + (S != Sdown).sum() * 2
     return E1 + E2/2
 
+
+# calculating the energy of a certain state.
 def CalculateEnergyint(S,B):
     """
     Calculate the energy of the system with ising interaction and external field

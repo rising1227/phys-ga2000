@@ -1,27 +1,36 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from initialize import IsingGeneration, CalculateEnergy
+from initialize import IsingGeneration, CalculateEnergy, IsingGenerationint
 from Metropolis import transferfunction, metropolis
 import multiprocessing
 import time
+import sys
+m = 100
+align = True
 
-m = 1000
+# generating data for different m: reading m from argv parameter
+if len(sys.argv) > 1:
+    m = np.int_(sys.argv[1])
+    align = bool(int(sys.argv[2]))
+
+# initialization
 B = np.zeros((m,m))
-S = IsingGeneration(m,B,False)
+S = IsingGenerationint(m,B,False,align)
 E0 = CalculateEnergy(S,B)
 M0 = (np.int_(S)*2-1).sum()
 
-
+# temperature range
 Tfinal = 5
-section = 400
+section = 100
 
+# our data, each element of EnergyT and MagneticT is an array for different temparature
 EnergyT = [0,0,0,0,0,0,0]
 MagneticT = [0,0,0,0,0,0,0]
 for i in range(7):
     EnergyT[i] = np.zeros(section)
     MagneticT[i] = np.zeros(section)
 
-# theoretical value
+# calculating theoretical value
 mas = np.linspace(0.01,5,1000)
 def TheoryMag(T):
     z = np.e**(-4/T)
@@ -32,33 +41,52 @@ def TheoryMag(T):
 
 TheoryMag = np.vectorize(TheoryMag)
 
-def iteration(T):
-    if T < 1.2:
-        return 3000000
-    elif T < 2.26:
-        return 6000000 + np.int64((TheoryMag(T-Tfinal/section) -TheoryMag(T))*700000000)
+# defining iteration for different temperature
+def iteration(T,B):
+    if B == 0:
+        if T > 2.1 and T < 2.4:
+            return 200000000
+        elif T < 1.2:
+            return 200000
+        elif T < 2.8:
+            return 2000000
+        else:
+            return 2000000
     else:
-        return 9000000
+        if T > 2.1 and T < 2.4:
+            return 8000000
+        elif T < 1.2:
+            return 200000
+        elif T < 2.8:
+            return 2000000
+        else:
+            return 2000000    
 
 B0range = [-0.5,-0.25,-0.1,0,0.1,0.25,0.5]
 
 nowtime = time.time()
 
+
+# funcion to do main calculation
 def DoBcalculation(queue,j):
+    # initialize
     B0 = B0range[j]
+    # get in track of simulation process
     print("simulating magnetic field:", B0range[j])
     B = np.ones((m,m)) * B0
     S = IsingGeneration(m,B,False)
     E0 = CalculateEnergy(S,B)
     M0 = (np.int_(S)*2-1).sum()
     i = 0
+    # performing metropolis algorithm for each temperature
     for T in np.linspace(0.001,Tfinal,section):
         print("calculating step:", i)
         print("current time used:", time.time()-nowtime)
-        EnergyT[j][i],MagneticT[j][i] = metropolis(m,T,S,B,M0,E0,iteration(T))
+        EnergyT[j][i],MagneticT[j][i] = metropolis(m,T,S,B,M0,E0,iteration(T,B0))
         i = i + 1
         E0 = CalculateEnergy(S,B)
         M0 = (np.int_(S)*2-1).sum()
+    # parallelism
     queue.put((EnergyT[j],MagneticT[j],j))
     # if j == 0:
     #     plt.plot(np.linspace(0.001,Tfinal,section),EnergyT[j],"+")
@@ -67,7 +95,7 @@ def DoBcalculation(queue,j):
 
 
 if __name__ == "__main__":
-    # creating processes
+    # perform main calculation in many cores
     p = [0,0,0,0,0,0,0]
     queue = multiprocessing.Queue()
     for i in range(7):
@@ -84,31 +112,8 @@ if __name__ == "__main__":
     # both processes finished
     print("Done!")
 
+# saving the data into binary files
+np.save("E-T({s}).npy".format(s=m),EnergyT)
+np.save("B-T({s}).npy".format(s=m),MagneticT)
 
-for s in np.arange(3,7):
-    plt.plot(np.linspace(0.001,Tfinal,section),EnergyT[s],"+",label="B={asd}".format(asd=B0range[s]))
-plt.xlabel("T")
-plt.ylabel("E/J")
-plt.legend()
-plt.title("1000*1000 Ising model:E-T diagram")
-plt.savefig("E-T_withB_diagram(latest)")
-plt.clf()
 
-for s in range(7):
-    plt.plot(np.linspace(0.001,Tfinal,section),EnergyT[s],"+",label="B={asd}".format(asd=B0range[s]))
-plt.xlabel("T")
-plt.ylabel("E/J")
-plt.legend()
-plt.title("1000*1000 Ising model:E-T diagram")
-plt.savefig("E-T_withB_diagram(latest)(with negative B)")
-plt.clf()
-
-for s in range(7):
-    plt.plot(np.linspace(0.001,Tfinal,section),MagneticT[s]/m**2,"+",label="B={asd}".format(asd=B0range[s]))
-plt.plot(mas,TheoryMag(mas),"-",label="theoretical")
-plt.legend()
-plt.xlabel("T")
-plt.ylabel("M")
-plt.title("1000*1000 Ising model:M-T diagram")
-plt.savefig("M-T_withB_diagram(latest)")
-plt.clf()

@@ -2,6 +2,8 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 
+
+# legacy version with bool type
 def transferfunction(m,S,E,M,B,T):
     if T == 0:
         beta = 1000000000000000
@@ -22,7 +24,9 @@ def transferfunction(m,S,E,M,B,T):
             return E+deltaE, M+deltaM
         else:
             return E,M
-        
+
+
+# for performing one step in the markov chain
 def transferfunctionint(m,S,E,M,B,T):
     if T == 0:
         beta = 1000000000000000
@@ -44,6 +48,8 @@ def transferfunctionint(m,S,E,M,B,T):
         else:
             return E,M
 
+
+# legacy version with bool type
 def metropolis(m,T,S,B,M,E,iteration,func=transferfunction):
     energy = np.zeros(iteration)
     magnetic = np.zeros(iteration)
@@ -55,6 +61,8 @@ def metropolis(m,T,S,B,M,E,iteration,func=transferfunction):
     # plt.plot(magnetic)
     return np.average(energy[-iteration//10:-1]),np.average(magnetic[-iteration//10:-1])
 
+
+# reiterating "transferfunctionint" and perform a markov chain for a certain temperature
 def metropolisint(m,T,S,B,M,E,iteration,func=transferfunctionint):
     energy = np.zeros(iteration)
     magnetic = np.zeros(iteration)
@@ -64,6 +72,7 @@ def metropolisint(m,T,S,B,M,E,iteration,func=transferfunctionint):
         magnetic[i] = M
     # plt.plot(energy)
     plt.plot(magnetic)
+    print(np.std(energy[-iteration//10:-1])/np.average(energy[-iteration//10:-1]))
     return np.average(energy[-iteration//10:-1]),np.average(magnetic[-iteration//10:-1])
 
         
